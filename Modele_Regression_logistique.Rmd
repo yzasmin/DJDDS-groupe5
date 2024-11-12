@@ -16,6 +16,7 @@ print(current_directory)
 setwd("/Users/justinemanuel/Documents/GitHub/DJDDS-groupe5")
 ```
 
+# Données
 
 ```{r}
 
@@ -70,7 +71,7 @@ sapply(train_data[, c("R2", "R7", "R8", "R17", "R22", "R32")], class)
 sum(is.na(train_data))
 ```
 
-
+# Model de Régression
 
 ```{r}
 # Charger les bibliothèques nécessaires
@@ -184,7 +185,20 @@ cat("Le fichier CSV avec les prédictions a été créé sous le nom 'soumission
 ```
 
 ```{r}
-predictions_numeric
+# Créer un dataframe des prédictions de classe
+class_df <- data.frame(
+  Classe = predictions_class
+)
+
+# Visualisation avec un barplot pour voir le nombre de prédictions dans chaque classe
+ggplot(class_df, aes(x = factor(Classe), fill = factor(Classe))) +
+  geom_bar() +
+  ggtitle("Distribution des Prédictions de Classe") +
+  xlab("Classe Prédite") +
+  ylab("Nombre de Prédictions") +
+  scale_fill_manual(values = c("steelblue", "coral")) +
+  theme_minimal() +
+  theme(legend.position = "none")
 ```
 
 
@@ -229,5 +243,8 @@ ggplot(donnees, aes(x = DIFF, y = R32)) +
   theme_minimal()
 ```
 
+```{r}
+
+```
 
 

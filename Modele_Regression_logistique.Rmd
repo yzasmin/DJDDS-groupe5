@@ -154,3 +154,43 @@ sens_spec_plot <- ggplot() +
 print(sens_spec_plot)
 ```
 
+# Visualisation sur les données train
+
+```{r}
+# Graphique 1: DIFF vs R2
+ggplot(donnees, aes(x = DIFF, y = R2)) +  
+  geom_point() +  
+  labs(title = "Graphique de dispersion : DIFF vs R2", x = "DIFF", y = "R2") +
+  theme_minimal()
+
+# Graphique 2: DIFF vs R7
+ggplot(donnees, aes(x = DIFF, y = R7)) +  
+  geom_point() +  
+  labs(title = "Graphique de dispersion : DIFF vs R7", x = "DIFF", y = "R7") +
+  theme_minimal()
+
+# Graphique 3: DIFF vs R8
+ggplot(donnees, aes(x = DIFF, y = R8)) +  
+  geom_point() +  
+  labs(title = "Graphique de dispersion : DIFF vs R8", x = "DIFF", y = "R8") +
+  theme_minimal()
+
+# Graphique 4: DIFF vs R17
+ggplot(donnees, aes(x = DIFF, y = R17)) +  
+  geom_point() +  
+  labs(title = "Graphique de dispersion : DIFF vs R17", x = "DIFF", y = "R17") +
+  theme_minimal()
+
+# Graphique 5: DIFF vs R22
+ggplot(donnees, aes(x = DIFF, y = R22)) +  
+  geom_point() +  
+  labs(title = "Graphique de dispersion : DIFF vs R22", x = "DIFF", y = "R22") +
+  theme_minimal()
+
+# Graphique 6: DIFF vs R32
+ggplot(donnees, aes(x = DIFF, y = R32)) +  
+  geom_point() +  
+  labs(title = "Graphique de dispersion : DIFF vs R32", x = "DIFF", y = "R32") +
+  theme_minimal()
+```
+

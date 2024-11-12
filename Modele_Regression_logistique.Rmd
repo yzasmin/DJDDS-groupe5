@@ -92,7 +92,6 @@ summary(log_model)
 predictions_prob <- predict(log_model, test_data, type = "response")
 
 # Convertir les probabilités en classes binaires
-# Par défaut, on prend 0.5 comme seuil pour transformer les probabilités en classes (1 ou 0)
 predictions_class <- ifelse(predictions_prob > 0.5, 1, 0)
 
 # Convertir les prédictions en facteur pour la comparaison avec la variable cible dans les données de test
@@ -153,6 +152,42 @@ sens_spec_plot <- ggplot() +
 
 print(sens_spec_plot)
 ```
+# Prédiction sur les données test
+
+```{r}
+# Prédictions sur les données2
+predictions_prob <- predict(log_model, newdata = donnees2, type = "response")
+
+# Convertir les probabilités en classes binaires (si nécessaire)
+predictions_class <- ifelse(predictions_prob > 0.5, 1, 0)
+
+# Convertir les prédictions en facteur (0, 1)
+predictions_class <- factor(predictions_class, levels = c(0, 1))
+
+# Afficher les résultats
+print(predictions_class)
+
+```
+
+```{r}
+# Créer un dataframe avec les ID et les prédictions de classe (DIFF)
+predictions_df <- data.frame(
+  ID = seq_len(nrow(donnees2)),
+  DIFF = predictions_class 
+)
+
+# Sauvegarder ce dataframe dans un fichier CSV
+write.csv(predictions_df, "soumission.csv", row.names = FALSE)
+
+# Afficher le message de confirmation
+cat("Le fichier CSV avec les prédictions a été créé sous le nom 'soumission.csv'.")
+```
+
+```{r}
+predictions_numeric
+```
+
+
 
 # Visualisation sur les données train
 
@@ -193,4 +228,6 @@ ggplot(donnees, aes(x = DIFF, y = R32)) +
   labs(title = "Graphique de dispersion : DIFF vs R32", x = "DIFF", y = "R32") +
   theme_minimal()
 ```
+
+
 

@@ -1,0 +1,156 @@
+---
+title: "data science grp 5"
+output: html_document
+date: "2024-11-12"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+current_directory <- getwd()
+
+# Afficher le répertoire de travail
+print(current_directory)
+setwd("/Users/justinemanuel/Documents/GitHub/DJDDS-groupe5")
+```
+
+
+```{r}
+
+# Charger les bibliothèques nécessaires
+library(ggplot2)
+library(readr)
+
+# Charger les données depuis le fichier CSV avec un point-virgule comme délimiteur et un séparateur décimal
+donnees <- read.csv2("DATA/farms_train.csv")
+donnees2 <- read.csv2("DATA/farms_test.csv")
+
+
+# Afficher les premières lignes pour vérifier les données
+head(donnees)
+head(donnees2)
+
+```
+
+```{r}
+library(caret)
+set.seed(123)  # Pour rendre la partition reproductible
+
+# Partitionner les données d'entraînement : 80% pour l'entraînement, 20% pour le test
+partition <- createDataPartition(donnees$DIFF, p = 0.8, list = FALSE)
+
+# Données d'entraînement (80%)
+train_data <- donnees[partition, ]
+
+# Données de test (20%)
+test_data <- donnees[ -partition, ]
+
+# Vérifier la taille des jeux de données
+cat("Taille des données d'entraînement : ", nrow(train_data), "\n")
+cat("Taille des données de test : ", nrow(test_data), "\n")
+
+# Vérifier les premières lignes des jeux de données d'entraînement et de test
+head(train_data)
+head(test_data)
+```
+```{r}
+train_data$DIFF <- factor(train_data$DIFF)
+str(train_data$DIFF)
+test_data$DIFF <- factor(test_data$DIFF)
+str(test_data$DIFF)
+# Vérifiez le type des variables explicatives
+sapply(train_data[, c("R2", "R7", "R8", "R17", "R22", "R32")], class)
+
+```
+
+```{r}
+# Vérifier la présence de valeurs manquantes dans le jeu de données
+sum(is.na(train_data))
+```
+
+
+
+```{r}
+# Charger les bibliothèques nécessaires
+library(dplyr)   # Pour manipuler les données
+
+# Créer un modèle de régression logistique sur les données d'entraînement
+log_model <- glm(DIFF ~ R2 + R7 + R8 + R17 + R22 + R32, data = train_data, family = binomial)
+
+# Résumé du modèle pour voir les coefficients
+summary(log_model)
+
+```
+
+
+
+```{r}
+# Faire des prédictions sur les données de test
+# Utiliser le modèle logistique pour prédire la probabilité que DIFF = 1
+predictions_prob <- predict(log_model, test_data, type = "response")
+
+# Convertir les probabilités en classes binaires
+# Par défaut, on prend 0.5 comme seuil pour transformer les probabilités en classes (1 ou 0)
+predictions_class <- ifelse(predictions_prob > 0.5, 1, 0)
+
+# Convertir les prédictions en facteur pour la comparaison avec la variable cible dans les données de test
+predictions_class <- factor(predictions_class, levels = c(0, 1))
+
+# Calculer la matrice de confusion pour évaluer la performance du modèle
+library(caret)
+conf_matrix <- confusionMatrix(predictions_class, test_data$DIFF)
+
+# Afficher la matrice de confusion
+print(conf_matrix)
+
+# Extraire l'accuracy (précision globale) du modèle
+accuracy <- conf_matrix$overall['Accuracy']
+cat("Accuracy: ", accuracy, "\n")
+```
+
+```{r}
+# Charger les bibliothèques nécessaires
+library(pROC)
+library(ROCR)
+
+# 1. Courbe ROC et AUC
+roc_curve <- roc(test_data$DIFF, predictions_prob)  # Calculer la courbe ROC
+cat("AUC: ", auc(roc_curve), "\n")  # Afficher l'AUC
+
+# Tracer la courbe ROC
+roc_plot <- ggroc(roc_curve) +
+  ggtitle("Courbe ROC") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  labs(x = "Taux de faux positifs (FPR)", y = "Taux de vrais positifs (TPR)") +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "gray")
+
+print(roc_plot)
+```
+
+```{r}
+# 2. Sensibilité et Spécificité
+# Créer des objets de prédiction avec ROCR
+pred_rocr <- prediction(predictions_prob, test_data$DIFF)
+
+# Calculer les performances à différents seuils
+perf <- performance(pred_rocr, measure = "tpr", x.measure = "fpr")  # Sensibilité (TPR) vs. Spécificité (1 - FPR)
+sensitivity_specificity <- performance(pred_rocr, measure = "sens", x.measure = "spec")
+
+# Tracer les courbes de sensibilité et spécificité
+sens_spec_plot <- ggplot() +
+  geom_line(aes(x = sensitivity_specificity@x.values[[1]], 
+                y = sensitivity_specificity@y.values[[1]]), 
+            color = "blue") +
+  labs(title = "Courbe Sensibilité vs. Spécificité", 
+       x = "Spécificité (1 - FPR)", y = "Sensibilité (TPR)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::percent)
+
+print(sens_spec_plot)
+```
+

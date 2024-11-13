@@ -26,7 +26,13 @@ library(readr)
 
 # Charger les données depuis le fichier CSV avec un point-virgule comme délimiteur et un séparateur décimal
 donnees <- read.csv2("DATA/farms_train.csv")
-donnees2 <- read.csv2("DATA/farms_test.csv")
+# Charger la bibliothèque nécessaire
+library(tidyr)
+
+# Lire le fichier CSV (en supposant que le séparateur entre les colonnes est une virgule)
+donnees2 <- read.csv("DATA/farms_test.csv", sep = ",", header = TRUE, stringsAsFactors = FALSE)
+
+
 
 
 # Afficher les premières lignes pour vérifier les données
@@ -63,7 +69,7 @@ test_data$DIFF <- factor(test_data$DIFF)
 str(test_data$DIFF)
 # Vérifiez le type des variables explicatives
 sapply(train_data[, c("R2", "R7", "R8", "R17", "R22", "R32")], class)
-
+sapply(test_data[, c("R2", "R7", "R8", "R17", "R22", "R32")], class)
 ```
 
 ```{r}
@@ -156,8 +162,21 @@ print(sens_spec_plot)
 # Prédiction sur les données test
 
 ```{r}
+head(donnees2)
+str(donnees2_separated)
+donnees2_separated$R2 <- as.numeric(donnees2_separated$R2)
+donnees2_separated$R7 <- as.numeric(donnees2_separated$R7)
+donnees2_separated$R8 <- as.numeric(donnees2_separated$R8)
+donnees2_separated$R17 <- as.numeric(donnees2_separated$R17)
+donnees2_separated$R22 <- as.numeric(donnees2_separated$R22)
+donnees2_separated$R32 <- as.numeric(donnees2_separated$R32)
+str(donnees2_separated)
+```
+
+
+```{r}
 # Prédictions sur les données2
-predictions_prob <- predict(log_model, newdata = donnees2, type = "response")
+predictions_prob <- predict(log_model, newdata = donnees2_separated, type = "response")
 
 # Convertir les probabilités en classes binaires (si nécessaire)
 predictions_class <- ifelse(predictions_prob > 0.5, 1, 0)
@@ -169,6 +188,11 @@ predictions_class <- factor(predictions_class, levels = c(0, 1))
 print(predictions_class)
 
 ```
+```{r}
+head(donnees2)
+head(donnees)
+```
+
 
 ```{r}
 # Créer un dataframe avec les ID et les prédictions de classe (DIFF)

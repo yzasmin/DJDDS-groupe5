@@ -1,0 +1,206 @@
+---
+title: "Regression logistique"
+author: "Justin Emanuel"
+date: '12-11-2024'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+---
+title: "TP 3 - La régression logistique (et toujours un peu de KNN)"
+output: html_document
+date: "2024-2025"
+---
+  
+*** 
+```{r dplyr}
+#install.packages("dplyr")
+library(dplyr)
+```
+
+```{r}
+current_directory <- getwd()
+
+# Afficher le répertoire de travail
+print(current_directory)
+setwd("/Users/justinemanuel/Documents/GitHub/DJDDS-groupe5")
+```
+
+ 
+```{r prostate}
+prostate=read.table("/Users/mdemang1/Documents/enseignements/PaulValery/PosteMCFMontpellier/Enseignements/2022-2023/masterMIASHS/ClassificationSuperviseeEtNonSupervisee/2023-2024/TP/prostate.csv",sep=";", dec=".",header=T)
+dim(prostate)
+head(prostate)
+glimpse(prostate)
+```
+
+
+Nous allons modifier le format des données pour les variables qualitatives.  
+```{r}
+prostate = mutate(prostate, radio = as.factor(radio))
+prostate = mutate(prostate, taille = as.factor(taille))
+prostate = mutate(prostate, gravite = as.factor(gravite))
+prostate = mutate(prostate, lymph = as.factor(lymph))
+glimpse(prostate)
+```
+
+
+## Graphiques pour variables explicatives quantitatives 
+On étudie le lien entre la **variable cible** `lymph` et les **variables quantitatives** avec des boxplots.
+
+```{r}
+library(ggplot2)
+ggplot(prostate, aes(lymph,age)) +
+geom_boxplot(aes(fill = lymph))
+```
+
+**2)** Qu'en concluez-vous ?
+Le lien entre l’âge et la variable `lymph`semble est faible.
+
+Etudions maintenant lien entre les variables acid et lymph.
+```{r}
+ggplot(prostate, aes(lymph,acid)) +
+geom_boxplot(aes(fill = lymph))
+```
+
+**3)** Qu'en concluez-vous ? 
+Il semble y avoir un fort lien entre les variables `acid` et `lymph`.
+
+Observons maintenant la loi de la variable acid.
+
+```{r}
+ggplot(prostate, aes(acid)) + geom_histogram()
+```
+
+La loi est très dissymétrique, on préférera la transformer (passage au log).
+```{r}
+ggplot(prostate, aes(log(acid))) + geom_histogram()
+```
+
+
+On vérifie le lien entre la variable cible (lymph) et la variable acid après sa transformation log (log(acid)).
+```{r}
+ggplot(prostate, aes(lymph,log(acid))) +
+geom_boxplot(aes(fill = lymph))
+```
+
+**4) ** Qu'en concluez-vous ? 
+Le lien entre `log(acid)` et `lymph` est toujours fort.
+
+## Variables explicatives qualitatives
+
+Pour chaque variable qualitative, 
+
+(1) Construisons la distribution empirique jointe à la variable cible.
+```{r distribution jointe lymph x radio}
+table(prostate$lymph,prostate$radio)
+```
+
+(2) Etudions leur lien avec la variable cible (`lymph`) à l'aide d'un test du chi deux d’indépendance. 
+```{r chi deux (lymph, radio)}
+chisq.test(prostate$lymph,prostate$radio)
+```
+
+
+
+```{r, var qualitative taille}
+table(prostate$lymph,prostate$taille)
+chisq.test(prostate$lymph,prostate$taille)
+```
+
+```{r, var qualitative gravite}
+table(prostate$lymph,prostate$gravite)
+chisq.test(prostate$lymph,prostate$gravite)
+```
+
+**5) ** Que concluez-vous ?
+Les variables `taille` et `radio` semblent très liées à `lymph`. Ce n’est pas le cas pour la variable `gravite`.
+
+## Modèle logistique
+
+**Apprendre un modèle logistique**
+
+Apprendre un modèle avec la fonction glm() en utilisant l'ensemble des variables disponibles (2 quantitatives et 3 qualitatives).
+```{r}
+fit_logistic = glm(lymph ~ age + log(acid) + radio + gravite + taille, family = "binomial" ,data = prostate)
+```
+
+Analyser le résulat avec la fonction summary().
+
+```{r}
+summary(fit_logistic)
+```
+
+
+N.B. : La fonction summary() donne notamment les p-values des tests de Wald univariés sur les coefficients (H0 : $beta_j$ = 0). 
+
+**6) ** Quel commentaire pouvez-vous faire ?
+On retrouve sur les p-values des tests de Wald univariés les liens ou les absences de lien observés précédemment.
+
+**7) ** Le modèle vous semble-t-il pertinent ? Avez-vous des propositions pour améliorer ce modèle  ?
+
+
+## Prédictions, matrice de confusion
+
+**Prédictions**
+
+**8) **  Utiliser la fonction predict pour renvoyer, pour tous les individus, la valeur de probabilité prédite avec le modèle 'fit_logistic' appris ci-dessus.
+
+```{r}
+?predict.glm
+predictions = predict(fit_logistic,type = "response")
+```
+
+
+**9) ** Renvoyer ensuite les étiquettes prédites par le classifieur 
+```{r}
+#on choisit un seuil souvent utiliser : 1/2
+seuil=1/2
+predictions_01 = predictions > seuil
+```
+
+**Matrice de confusion**
+
+**10) ** Donner la matrice de confusion
+
+```{r}
+table(as.numeric(predictions_01),prostate$lymph)
+```
+
+**11) ** Quel est le taux de faux positifs ? faux négatifs ? 
+Il y a 3/33 faux positifs et 6/20 faux négatifs.
+
+
+
+**12) ** Faire varier le seuil utilisé pour la prédiction. Expliquer le comportement de la matrice de confusion en fontion de ce seuil. Au tout début, quand seuil = 0, l'algo prédit tout le monde en positifs. Au fur et à mesure que le seuil augmente, l'algo va prédire des 0 : au début c'est plutôt des TP mais ensuite, plus le seuil augmente, plus je vais avoir des FN. QUand seuil = 1 : on prédit que des Négatifs.
+```{r}
+
+seuils = seq(0, 1, length.out = 9)
+for(i in 1:length(seuils)){
+seuil=seuils[i]
+predictions_01 = predictions > seuil
+print(table(as.numeric(predictions_01),prostate$lymph))
+}
+```
+
+## Courbe ROC et AUC
+
+```{r}
+#install.packages("ROCR")
+library(ROCR)
+```
+
+**13)** Tracer la courbe ROC et calculer l'AUC. Vous pourrez vous aider de l'exemple donné sur [ce site](http://www.duclert.org/r-apprentissage/courbes-ROC-R.php). 
+
+```{r}
+pred = prediction( predictions , prostate$lymph )
+perf = performance( pred, "tpr" ,"fpr" )
+plot( perf )
+
+ROC_auc = performance( pred,"auc")
+AUC = ROC_auc@y.values[[1]]
+print(AUC)
+```
